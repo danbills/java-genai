@@ -4,8 +4,8 @@ scalaVersion := "3.3.1"
 
 libraryDependencies ++= Seq(
   // Iron for refinement types
-  "io.github.iltotore" %% "iron" % "2.3.0",
-  "io.github.iltotore" %% "iron-circe" % "2.3.0",
+  "io.github.iltotore" %% "iron" % "3.2.1",
+  "io.github.iltotore" %% "iron-circe" % "3.2.1",
 
   // Circe for JSON
   "io.circe" %% "circe-core" % "0.14.6",

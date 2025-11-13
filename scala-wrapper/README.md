@@ -47,7 +47,7 @@ vertexClient.generateContent(geminiModel, ...) // COMPILE ERROR
 ```scala
 // build.sbt
 libraryDependencies ++= Seq(
-  "io.github.iltotore" %% "iron" % "2.3.0",
+  "io.github.iltotore" %% "iron" % "3.2.1",
   "org.typelevel" %% "cats-effect" % "3.5.2"
 )
 ```
@@ -171,6 +171,22 @@ data.decode  // Array[Byte]
 val prompt = Prompt.unsafe("Write a haiku")
 prompt.wordCount  // 3
 prompt.charCount  // 13
+```
+
+### Collection Constraints
+
+Iron can also enforce constraints on collections, such as ensuring they are not empty.
+
+```scala
+import com.google.genai.scala.constraints.CollectionConstraints.*
+import com.google.genai.scala.types.Part
+
+// NonEmptyList: ensures a list contains at least one element
+val parts1: Either[String, NonEmptyList[Part]] = NonEmptyList(List(Part.Text("Hello"))) // Right(...)
+val parts2: Either[String, NonEmptyList[Part]] = NonEmptyList(List.empty[Part])      // Left("Should be a non empty list")
+
+// Content.parts can be constrained to be non-empty
+case class Content(role: Role, parts: NonEmptyList[Part])
 ```
 
 ## 🎭 Phantom Types for API Variants
@@ -434,16 +450,25 @@ GenAiClient.gemini(apiKey).use { client =>
 ## 🎓 Model Tuning (Vertex AI Only)
 
 ```scala
+import com.google.genai.scala.constraints.NumericConstraints.*
+
 // Only available on VertexApiClient
 GenAiClient.vertex(projectId, location, token).use { client =>
   for
+    // Epochs: > 0
+    epochs <- IO.fromEither(Epochs(10).left.map(new RuntimeException(_)))
+    // LearningRate: 0.0 - 1.0
+    learningRate <- IO.fromEither(LearningRate(0.001).left.map(new RuntimeException(_)))
+    // BatchSize: > 0
+    batchSize <- IO.fromEither(BatchSize(32).left.map(new RuntimeException(_)))
+
     jobId <- client.createTuningJob(
       baseModel = ModelId.Gemini_1_5_Flash,
       trainingDataUri = Uri.unsafe("gs://my-bucket/training.jsonl"),
       config = TuningConfig(
-        epochs = 10,
-        learningRate = Some(0.001),
-        batchSize = Some(32)
+        epochs = epochs,
+        learningRate = Some(learningRate),
+        batchSize = Some(batchSize)
       )
     )
 
